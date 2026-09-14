@@ -1,0 +1,31 @@
+{
+  "name": "agroculturedb",
+  "version": "1.0.0",
+  "description": "my first electron app for college",
+  "keywords": [
+    "acdb"
+  ],
+  "homepage": "https://github.com/NamitaroUA/AgroCultureDB#readme",
+  "bugs": {
+    "url": "https://github.com/NamitaroUA/AgroCultureDB/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NamitaroUA/AgroCultureDB.git"
+  },
+  "license": "ISC",
+  "author": "Kodynets Bohdan",
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.renderer.json",
+    "watch": "tsc --watch",
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "electron": "^44.3.0",
+    "typescript": "^7.0.2"
+  }
+}
