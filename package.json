@@ -15,17 +15,21 @@
   },
   "license": "ISC",
   "author": "Kodynets Bohdan",
-  "type": "commonjs",
-  "main": "dist/main.js",
+  "type": "module",
+  "main": "out/main/index.js",
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.renderer.json",
-    "watch": "tsc --watch",
-    "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
     "electron": "^44.3.0",
+    "electron-vite": "^5.0.0",
     "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

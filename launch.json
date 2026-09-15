@@ -20,11 +20,11 @@
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-vite",
       "windows": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-vite.cmd"
       },
-      "args": [".", "--remote-debugging-port=9222"],
+      "args": [".", "--remote-debugging-port=9222", "--sourcemap"],
       "outputCapture": "std",
       "console": "integratedTerminal"
     }
