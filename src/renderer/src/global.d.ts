@@ -6,6 +6,11 @@ declare global {
       node: () => string;
       chrome: () => string;
       electron: () => string;
+    }; 
+    api: {
+      crops: {
+        list: () => Promise<{ id: number; name: string}[]>;
+      };
     };
   }
 }
