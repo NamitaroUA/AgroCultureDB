@@ -9,7 +9,7 @@ declare global {
     }; 
     api: {
       crops: {
-        list: () => Promise<{ id: number; name: string}[]>;
+        list: () => Promise<{ CropID: number; Name: string}[]>;
       };
     };
   }

@@ -6,6 +6,10 @@ function createWindow(): void {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        minWidth: 800,
+        minHeight: 600,
+        maxWidth: 800,
+        maxHeight: 600,
         webPreferences: {
             preload: join(__dirname, '../preload/index.mjs'),
             sandbox: false

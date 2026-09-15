@@ -12,7 +12,7 @@ async function loadCrops(): Promise<void> {
     if (list) {
         let html = ''
         for (const crop of crops) {
-            html += `<li>${crop.id}: ${crop.name}</li>`
+            html += `<li>${crop.CropID}: ${crop.Name}</li>`
         }
 
         list.innerHTML = html

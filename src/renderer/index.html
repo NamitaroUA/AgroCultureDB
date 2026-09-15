@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-    <meta
-      http-equiv="X-Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'"
-    />
-    <title>Hello from Electron renderer!</title>
-  </head>
-  <body>
-    <h1>Hello from Electron renderer!</h1>
-    <p>👋 HELLOOOO THE CHANGES</p>
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  <title>Dashboard</title>
+
+  <script type="module" src="./src/left-dock.ts" defer></script>
+
+  <link rel="stylesheet" href="src/css/base.css">
+</head>
+
+<body>
+  <left-dock></left-dock>
+
+  <main>
+    <p>Вітаємо на підприємстві AgroERP Core</p>
     <p id="info"></p>
-
     <ul id="crops"></ul>
-  </body>
+  </main>
+</body>
 
-  <script type="module" src="./src/welcome.ts"></script>
+<script type="module" src="./src/index.ts"></script>
+
 </html>
