@@ -230,9 +230,69 @@ await pool.request().query(`
             (N'Люцерна', N'т')
         `)
 
+/** Deprecated: Not in use anymore. For debug purposes only.*/ 
 export async function getAllCrops() {
     const pool = await poolPromise
-    const result = await pool.request().query('Select CropID, Name FROM Crops')
-    console.log('CROPS IN DATABASE:', getAllCrops())
+    const result = await pool.request().query('Select CropID, Name FROM Crops ORDER BY CropID')
     return result.recordset
+}
+
+
+export async function getTables() {
+    const pool = await poolPromise
+    const result = await pool.request().query(
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND 
+TABLE_SCHEMA = 'dbo' ORDER BY TABLE_NAME`
+    )
+    return result.recordset
+}
+
+
+export async function getSchema(tableName: string) {
+    const pool = await poolPromise
+    const result = await pool.request()
+        .input('tableName', tableName)
+        .query(`SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE 
+TABLE_NAME = @tableName ORDER BY ORDINAL_POSITION`)
+    return result.recordset
+}
+
+
+export async function readTable(tableName: string) {
+    const pool = await poolPromise
+    const schema = await getSchema(tableName)
+    const result = await pool.request().query(`SELECT * FROM [${tableName}]`)
+    return { columns: schema, rows: result.recordset }
+}
+
+
+export async function updateRow(tableName: string, pkColumn: string, pkValue: any, values: 
+Record<string, any>) {
+    const pool = await poolPromise
+    const sets = Object.entries(values).map(([k, v]) => `[${k}] = @${k}`).join(', ')
+    const req = pool.request()
+    Object.entries(values).forEach(([k, v]) => req.input(k, v))
+    req.input('pkValue', pkValue)
+    await req.query(`UPDATE [${tableName}] SET ${sets} WHERE [${pkColumn}] = @pkValue`)
+    return true
+}
+
+
+export async function insertRow(tableName: string, values: Record<string, any>) {
+    const pool = await poolPromise
+    const cols = Object.keys(values).map(k => `[${k}]`).join(', ')
+    const params = Object.keys(values).map(k => `@${k}`).join(', ')
+    const req = pool.request()
+    Object.entries(values).forEach(([k, v]) => req.input(k, v))
+    await req.query(`INSERT INTO [${tableName}] (${cols}) VALUES (${params})`)
+    return true
+}
+
+
+export async function deleteRow(tableName: string, pkColumn: string, pkValue: any) {
+    const pool = await poolPromise
+    await pool.request()
+        .input('pkValue', pkValue)
+        .query(`DELETE FROM [${tableName}] WHERE [${pkColumn}] = @pkValue`)
+    return true
 }
