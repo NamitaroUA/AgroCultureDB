@@ -49,8 +49,10 @@ body {
     color: black;
     text-align: center;
     border: 2px solid black;
-    border-radius: 25px;
+    border-radius: 10px;
     background-color: rgb(222, 222, 22);
+
+    margin-bottom: 6px;
 }
 
 main {

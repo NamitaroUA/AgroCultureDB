@@ -3,13 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
   <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
-  <title>Dashboard</title>
-
-  <script type="module" src="./src/left-dock.ts" defer></script>
-  <script type="module" src="./src/index.ts"></script>
+  <title>Tables</title>
 
   <link rel="stylesheet" href="src/css/base.css">
 </head>
@@ -18,12 +14,11 @@
   <left-dock></left-dock>
 
   <main>
-    <p>Вітаємо на підприємстві AgroERP Core</p>
-    <p id="info"></p>
-    <ul id="crops"></ul>
+    <table-viewer></table-viewer>
   </main>
+
+  <script type="module" src="./src/left-dock.ts" defer></script>
+  <script type="module" src="./src/table-viewer.ts" defer></script>
 </body>
-
-
 
 </html>

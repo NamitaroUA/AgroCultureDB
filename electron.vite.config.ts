@@ -15,7 +15,11 @@ export default defineConfig({
   },
   renderer: {
     build: {
-      rollupOptions: { input: { index: resolve(__dirname, 'src/renderer/index.html') } }
+      rollupOptions: { 
+        input: {
+           index: resolve(__dirname, 'src/renderer/index.html'),
+           tables: resolve(__dirname, 'src/renderer/tables.html') 
+          } }
     }
   }
 })
