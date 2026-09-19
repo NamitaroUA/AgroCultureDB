@@ -21,12 +21,15 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "start": "electron-vite preview"
+    "start": "electron-vite preview",
+    "dist:win": "electron-vite build && electron-builder --win portable",
+    "dist:linux": "electron-vite build && electron-builder --linux"
   },
   "devDependencies": {
     "@types/mssql": "^12.3.0",
     "@types/node": "^26.5.1",
     "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "typescript": "^7.0.2"
   },
@@ -36,5 +39,34 @@
   "dependencies": {
     "dotenv": "^18.0.0",
     "mssql": "^12.7.2"
+  },
+  "build": {
+    "appId": "ua.namitaro.agroculturedb",
+    "productName": "AgroCultureDB",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": "env/.env"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
+    }
   }
 }

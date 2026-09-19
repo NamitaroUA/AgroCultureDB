@@ -1,5 +1,14 @@
 import sql from 'mssql'
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { app } from 'electron'
+import { join } from 'path'
+
+function envPath(): string {
+    return app.isPackaged
+        ? join(process.resourcesPath, 'env', '.env')
+        : join(app.getAppPath(), '.env')
+}
+dotenv.config({ path: envPath() })
 
 const config: sql.config = {
     user: process.env.DB_USER ?? 'sa',
