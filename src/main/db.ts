@@ -141,7 +141,7 @@ async function ensureSchema() {
                 Quantity DECIMAL(10, 2) NOT NULL,
                 Price DECIMAL(10, 2) NOT NULL,
                 SaleDate DATE NOT NULL,
-                CHECK (Quantity <= (SELECT MainProduct FROM Harvests WHERE HarvestID = Sales.HarvestID) OR (SELECT MainProduct FROM Harvests WHERE HarvestID = Sales.HarvestID) IS NULL)
+                CHECK (Quantity > 0)
             )
         END
     `)
@@ -171,40 +171,46 @@ async function ensureSchema() {
         END
     `)
 
+     await pool.request().query(`IF OBJECT_ID(N'dbo.GMReport', N'V') IS NOT NULL DROP VIEW dbo.GMReport;`)
+
     await pool.request().query(`
-        IF OBJECT_ID(N'dbo.GMReport', N'V') IS NULL
-        BEGIN
-            CREATE VIEW GMReport AS
-            SELECT 
-                f.Name AS FieldName,
-                c.Name AS CropName,
-                f.Area,
-                h.YieldPerHa,
+        CREATE VIEW dbo.GMReport AS
+        WITH Base AS (
+            SELECT
+                f.FieldID, f.Name AS FieldName, c.Name AS CropName, h.HarvestID,
+                f.Area, h.YieldPerHa,
                 f.Area * h.YieldPerHa AS GrossHarvest,
                 COALESCE(r.GrossRevenue, f.Area * h.YieldPerHa * h.Price) AS GrossRevenue,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.Category = N'Насіння' AND vc.FieldID = f.FieldID) AS Seeds,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.Category = N'Добрива' AND vc.FieldID = f.FieldID) AS Fertilizers,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.Category = N'ЗЗР' AND vc.FieldID = f.FieldID) AS CropProtection,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.Category = N'Пальне' AND vc.FieldID = f.FieldID) AS Fuel,
-                (SELECT SUM(vo.HoursWorked * e.HourRate) FROM FieldOperations vo JOIN Employees e ON vo.EmployeeID = e.EmployeeID WHERE vo.FieldID = f.FieldID) AS Labor,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.Category = N'Послуги' AND vc.FieldID = f.FieldID) AS Services,
-                (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID) AS TotalVariableCosts,
-                COALESCE(r.GrossRevenue, f.Area * h.YieldPerHa * h.Price) - (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID) AS GM_I,
-                COALESCE(r.GrossRevenue, f.Area * h.YieldPerHa * h.Price) - (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID) - (SELECT SUM(vo.HoursWorked * e.HourRate) FROM FieldOperations vo JOIN Employees e ON vo.EmployeeID = e.EmployeeID WHERE vo.FieldID = f.FieldID) AS GM_II,
-                COALESCE(r.GrossRevenue, f.Area * h.YieldPerHa * h.Price) - (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID) - (SELECT SUM(vo.HoursWorked * e.HourRate) FROM FieldOperations vo JOIN Employees e ON vo.EmployeeID = e.EmployeeID WHERE vo.FieldID = f.FieldID) AS GM_III,
-                COALESCE(r.GrossRevenue, f.Area * h.YieldPerHa * h.Price) - (SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID) - (SELECT SUM(vo.HoursWorked * e.HourRate) FROM FieldOperations vo JOIN Employees e ON vo.EmployeeID = e.EmployeeID WHERE vo.FieldID = f.FieldID) AS EconomicProfit
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Насіння'), 0) AS Seeds,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Добрива'), 0) AS Fertilizers,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'ЗЗР'), 0) AS CropProtection,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Пальне'), 0) AS Fuel,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Послуги'), 0) AS Services,
+                COALESCE((SELECT SUM(vo.HoursWorked * e.HourRate) FROM FieldOperations vo JOIN Employees e ON e.EmployeeID = vo.EmployeeID WHERE vo.FieldID = f.FieldID), 0) AS Labor,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Амортизація'), 0) AS Amortization,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category = N'Власна праця'), 0) AS OwnLabor,
+                COALESCE((SELECT SUM(vc.Amount) FROM VariableCosts vc WHERE vc.FieldID = f.FieldID AND vc.Category NOT IN (N'Амортизація', N'Власна праця')), 0) AS TotalVariableCosts
             FROM Fields f
             JOIN Harvests h ON h.FieldID = f.FieldID
             JOIN Crops c ON c.CropID = h.CropID
             LEFT JOIN Revenue r ON r.HarvestID = h.HarvestID
-        END
+        )
+        SELECT
+            FieldName, CropName, Area, YieldPerHa, GrossHarvest, GrossRevenue,
+            Seeds, Fertilizers, CropProtection, Fuel, Services,
+            TotalVariableCosts, Labor, Amortization, OwnLabor,
+            GrossRevenue - TotalVariableCosts                        AS GM_I,
+            GrossRevenue - TotalVariableCosts - Labor                AS GM_II,
+            GrossRevenue - TotalVariableCosts - Labor - Amortization AS GM_III,
+            GrossRevenue - TotalVariableCosts - Labor - Amortization - OwnLabor AS EconomicProfit
+        FROM Base
     `)
 
 }
 
 const pool = await poolPromise
 
-ensureSchema().catch(console.error)
+await ensureSchema()
 await pool.request().query(`
     IF NOT EXISTS (SELECT 1 FROM Crops WHERE Name = N'Озима пшениця')
         INSERT INTO Crops (Name, Unit) VALUES
@@ -230,7 +236,7 @@ await pool.request().query(`
             (N'Люцерна', N'т')
         `)
 
-/** Deprecated: Not in use anymore. For debug purposes only.*/ 
+/** Deprecated: Not in use anymore. For debug purposes only.*/
 export async function getAllCrops() {
     const pool = await poolPromise
     const result = await pool.request().query('Select CropID, Name FROM Crops ORDER BY CropID')
@@ -241,12 +247,12 @@ export async function getAllCrops() {
 export async function getTables() {
     const pool = await poolPromise
     const result = await pool.request().query(
-        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND 
-TABLE_SCHEMA = 'dbo' ORDER BY TABLE_NAME`
+        `SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES
+         WHERE TABLE_TYPE IN ('BASE TABLE', 'VIEW') AND TABLE_SCHEMA = 'dbo'
+         ORDER BY CASE WHEN TABLE_TYPE = 'VIEW' THEN 1 ELSE 0 END, TABLE_NAME`
     )
     return result.recordset
 }
-
 
 export async function getSchema(tableName: string) {
     const pool = await poolPromise
@@ -261,13 +267,21 @@ TABLE_NAME = @tableName ORDER BY ORDINAL_POSITION`)
 export async function readTable(tableName: string) {
     const pool = await poolPromise
     const schema = await getSchema(tableName)
+
+    const typeReq = pool.request()
+    typeReq.input('typeTable', tableName)
+    const type = await typeReq.query(
+        `SELECT TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES
+         WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @typeTable`
+    )
+
     const result = await pool.request().query(`SELECT * FROM [${tableName}]`)
-    return { columns: schema, rows: result.recordset }
+    return { columns: schema, rows: result.recordset, objectType: type.recordset[0]?.TABLE_TYPE ?? 'BASE TABLE' }
 }
 
 
-export async function updateRow(tableName: string, pkColumn: string, pkValue: any, values: 
-Record<string, any>) {
+export async function updateRow(tableName: string, pkColumn: string, pkValue: any, values:
+    Record<string, any>) {
     const pool = await poolPromise
     const sets = Object.entries(values).map(([k, v]) => `[${k}] = @${k}`).join(', ')
     const req = pool.request()

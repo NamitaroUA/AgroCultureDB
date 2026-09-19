@@ -33,18 +33,18 @@ class TableView extends HTMLElement {
 
     async loadTable(tableName: string) {
         const result = await window.api.db.table.read(tableName)
-        const { columns, rows } = result
+        const { columns, rows, objectType } = result
+        const isView = objectType === 'VIEW'
 
         const pkColumn = columns.find(c => c.COLUMN_NAME.endsWith('ID'))?.COLUMN_NAME
-
         let html = `<h2>${tableName}</h2>`
-        html += '<table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%;">'
+        html += '<table class="data-table">'
         html += '<thead><tr>'
 
         for (const col of columns) {
             html += `<th>${col.COLUMN_NAME}</th>`
         }
-        html += '<th>Дії</th>'
+        if (!isView) html += '<th>Дії</th>'
         html += '</tr></thead>'
         html += '<tbody>'
 
@@ -58,21 +58,22 @@ class TableView extends HTMLElement {
                 if (isPk) {
                     html += `<td><b>${value}</b></td>`
                 } else {
-                    html += `<td contenteditable="true">${value}</td>`
+                    html += `<td contenteditable="${isView ? 'false' : 'true'}">${value}</td>`
                 }
             }
-            // Use a class name instead of onclick
-            html += `<td><button class="delete-btn" data-index="${i}">Видалити</button></td>`
+            if (!isView) {
+                html += `<td><button class="delete-btn" data-index="${i}">Видалити</button></td>`
+            }
             html += '</tr>'
         }
 
         html += '</tbody></table>'
-        // Use a class name instead of onclick
-        html += '<p><button class="add-row-btn">Додати рядок</button></p>'
-
+        if (!isView) {
+            html += '<p><button class="add-row-btn">Додати рядок</button></p>'
+        }
         this.container!.innerHTML = html
 
-        
+
     }
 
     async _deleteRow(rowIndex: number) {
