@@ -258,8 +258,20 @@ export async function getSchema(tableName: string) {
     const pool = await poolPromise
     const result = await pool.request()
         .input('tableName', tableName)
-        .query(`SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE 
-TABLE_NAME = @tableName ORDER BY ORDINAL_POSITION`)
+        .query(`SELECT
+            c.COLUMN_NAME, c.DATA_TYPE, c.IS_NULLABLE,
+            ref.TABLE_NAME AS FK_REFERENCED_TABLE,
+            COLUMNPROPERTY(OBJECT_ID(QUOTENAME(c.TABLE_SCHEMA) + '.' + QUOTENAME(c.TABLE_NAME)),
+                c.COLUMN_NAME, 'IsComputed') AS IS_COMPUTED
+        FROM INFORMATION_SCHEMA.COLUMNS c
+        LEFT JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+            ON c.TABLE_SCHEMA = kcu.TABLE_SCHEMA AND c.TABLE_NAME = kcu.TABLE_NAME AND c.COLUMN_NAME = kcu.COLUMN_NAME
+        LEFT JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+            ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
+        LEFT JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE ref
+            ON rc.UNIQUE_CONSTRAINT_NAME = ref.CONSTRAINT_NAME AND ref.ORDINAL_POSITION = kcu.ORDINAL_POSITION
+        WHERE c.TABLE_NAME = @tableName
+        ORDER BY c.ORDINAL_POSITION`)
     return result.recordset
 }
 
